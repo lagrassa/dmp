@@ -194,6 +194,8 @@ void generatePlan(const vector<DMPData> &dmp_list,
 	//Cut off if plan exceeds MAX_PLAN_LENGTH seconds, in case of overshoot / oscillation
 	//Only plan for seg_length seconds if specified
 	bool seg_end = false;
+        double c_t = -0.1; // fixed for now, but should be the 
+        double force_term = 0.7; //force term should be .9% of it
 	while(((t+t_0) < tau || (!at_goal && t<MAX_PLAN_LENGTH)) && !seg_end){
 		//Check if we've planned to the segment end yet
 		if(seg_length > 0){
@@ -227,7 +229,13 @@ void generatePlan(const vector<DMPData> &dmp_list,
 				}
 				
 				//Update v dot and x dot based on DMP differential equations
+                                //lagrassa: I think this is where I need to add the coupling term in
+                                //not sure if I should phase modulate it 
 				double v_dot = (dmp_list[i].k_gain*((goal[i]-x) - (goal[i]-x_0[i])*s + f_eval) - dmp_list[i].d_gain*v) / tau;
+                                //weighted average between v_dot and the force it's supposed to have
+                                ROS_INFO("vdot before value: %lf", v_dot);
+                                v_dot = (1-force_term)*v_dot + (force_term)*c_t;
+                                ROS_INFO("vdot before value: %lf", v_dot);
 				double x_dot = v/tau;
 
 				//Update state variables
